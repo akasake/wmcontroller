@@ -135,6 +135,7 @@ class CacheSubscriber implements EventSubscriberInterface
                 's-maxage' => $response->headers
                     ->getCacheControlDirective('s-maxage'),
             ];
+            \Drupal::logger('wmcontroller')->info("this->explicitMaxAges: ". json_encode($this->explicitMaxAges));
         }
     }
 
@@ -167,11 +168,15 @@ class CacheSubscriber implements EventSubscriberInterface
         }
 
         if (!empty($this->explicitMaxAges)) {
+            \Drupal::logger('wmcontroller')
+                ->info('Using explicitMaxAges');
             $this->setMaxAge($response, $this->explicitMaxAges);
             return;
         }
 
         if ($entityExpiry = $this->getMaxAgesForMainEntity()) {
+            \Drupal::logger('wmcontroller')
+                ->info('Using getMaxAgesForMainEntity');
             $this->setMaxAge($response, $entityExpiry);
             return;
         }
@@ -179,6 +184,8 @@ class CacheSubscriber implements EventSubscriberInterface
         $smax = $request->attributes->get('_smaxage', 0);
         $max = $request->attributes->get('_maxage', 0);
         if ($smax || $max) {
+            \Drupal::logger('wmcontroller')
+                ->info('Using routing.yml maxages');
             $this->setMaxAge(
                 $response,
                 ['s-maxage' => $smax, 'maxage' => $max]
@@ -191,7 +198,8 @@ class CacheSubscriber implements EventSubscriberInterface
             if (!preg_match('#' . $re . '#', $path)) {
                 continue;
             }
-
+            \Drupal::logger('wmcontroller')
+                ->info('Using services.yml exipiries.path maxages');
             $this->setMaxAge($response, $definition);
 
             return;
@@ -252,6 +260,9 @@ class CacheSubscriber implements EventSubscriberInterface
 
         // TODO find a way to handle exceptions thrown from this point on.
         // (we're in the kernel::TERMINATE phase)
+        \Drupal::logger('wmcontroller')
+            ->info('Using maxage:' . $response->getMaxAge());
+
         $this->storage->set(
             new Cache(
                 $this->getRequestUri($request),
@@ -362,5 +373,9 @@ class CacheSubscriber implements EventSubscriberInterface
         if (!empty($definition['s-maxage'])) {
             $response->setSharedMaxAge($definition['s-maxage']);
         }
+
+        \Drupal::logger('wmcontroller')
+            ->info("this->setMaxAge: ". json_encode($definition));
+
     }
 }
