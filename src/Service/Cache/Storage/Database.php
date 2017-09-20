@@ -84,6 +84,20 @@ class Database implements StorageInterface, PurgerInterface
         $tx = $this->db->startTransaction(self::TX);
 
         try {
+            $data = [
+                'time' => time(),
+                'time_vs_expiry' => $item->getExpiry() - time(),
+                'id' => $id,
+                'method' => $item->getMethod(),
+                'uri' => $item->getUri(),
+                'headers' => serialize($item->getHeaders()),
+                'content' => $item->getBody(),
+                'expiry' => $item->getExpiry(),
+            ];
+
+            \Drupal::logger('wmcontroller')
+                ->info('Inserting in db:' . json_encode($data));
+
             // Add cache entry
             $this->db->upsert(self::TABLE_ENTRIES)
                 ->key($id)
